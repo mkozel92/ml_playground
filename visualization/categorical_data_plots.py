@@ -1,7 +1,7 @@
 import plotly.graph_objs as go
 import numpy as np
 
-from visualization.colors import BLUE_SCHEME
+from visualization.colors import BLUE_SCHEME, PINK_SCHEME
 
 
 def get_categorical_data_scatter(data: np.array, labels: np.array, name: str, highlight: str = None,

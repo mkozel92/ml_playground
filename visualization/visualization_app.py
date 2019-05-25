@@ -4,6 +4,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 
 from data.data_generation import get_categorical_gaussian_data
+from data.data_normalization import feature_rescaling, feature_standardization
 from visualization.categorical_data_plots import get_categorical_data_scatter, get_target_histogram
 
 app = dash.Dash()
@@ -13,6 +14,8 @@ sigmas = np.array([1, 1, 1, 1, 5])
 counts = np.array([10, 20, 30, 50, 10])
 
 data, labels = get_categorical_gaussian_data(centers=centers, sigmas=sigmas, counts=counts)
+
+data = feature_standardization(data)
 
 fig_0 = get_categorical_data_scatter(data=data, labels=labels, name='sample data')
 fig_1 = get_target_histogram(targets=labels, name='targets histogram')
