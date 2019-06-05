@@ -40,5 +40,5 @@ def get_categorical_gaussian_data(centers: np.array, sigmas: np.array, counts: n
         final_data[from_:to_, :] = get_gaussian_data(centers[i], sigmas[i], counts[i])
         labels[from_: to_] = i
 
-    return final_data, labels
+    return final_data, labels.astype(int)
 
