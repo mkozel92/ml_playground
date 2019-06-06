@@ -4,24 +4,45 @@ from data.data_generation import get_categorical_gaussian_data
 from data.data_normalization import feature_standardization
 
 
+class ReLU(object):
+    """RelU layer"""
+    def __init__(self):
+        self.last_X = None
+
+    def forward(self, X: np.array) -> np.array:
+        """
+        apply relu function and remember input for backward pass
+        :param X: input data of size (num_data_points, dimension)
+        :return: output data of size (num_data_points, dimension)
+        """
+        self.last_X = X
+        return np.maximum(0, X)
+
+    def backward(self, dX: np.array) -> np.array:
+        """
+        Backward pass through the relu layer
+        :param dX: upstream gradients from following layers
+        :return: derivative with respect to L to pass to previous layer
+        """
+        dX[self.last_X <= 0] = 0
+        return dX
+
+
 class FCLayer(object):
     """fully connected layer"""
 
-    def __init__(self, input_size, num_neurons, std=1e-4, activation=None):
+    def __init__(self, input_size, num_neurons, std=1e-4):
         """
         Layer initialization
         :param input_size: size of input for the layer
         :param num_neurons: number of neurons in the layer
         :param std: standard dev for random weight initialization
-        :param activation: activation function
         """
         self.W = std * np.random.rand(input_size, num_neurons)
         self.b = np.zeros(num_neurons)
         self.last_X = None
-        self.last_y = None
         self.dW = None
         self.db = None
-        self.activation = activation
 
     def forward(self, X: np.array) -> np.array:
         """
@@ -30,21 +51,15 @@ class FCLayer(object):
         :return: np.array with layer output
         """
         self.last_X = X.copy()
-        y = X.dot(self.W) + self.b
-        self.last_y = y
-        if self.activation == 'relu':
-            y = np.maximum(0, y)
-        return y
+        return X.dot(self.W) + self.b
 
-    def backwards(self, dX: np.array) -> np.array:
+    def backward(self, dX: np.array) -> np.array:
         """
         compute gradients of the weights and biases using data from previous forward pass
         and upstream derivatives
         :param dX: upstream derivatives from next layers
         :return: derivative with respect to L to pass to previous layer
         """
-        if self.activation == 'relu':
-            dX[self.last_y <= 0] = 0
         self.db = np.sum(dX, axis=0)
         self.dW = self.last_X.T.dot(dX)
         return dX.dot(self.W.T)
@@ -66,7 +81,7 @@ class Softmax(object):
         self.last_output = X.copy()
         return X
 
-    def backwards(self, y):
+    def backward(self, y):
         """
         derivative of softmax function
         :param y: correct labels
@@ -88,10 +103,11 @@ class SimpleNeuralNet(object):
         :param output_size: dimensionality of output data
         """
         assert(len(hidden_sizes) > 0)
-        self.layers = [FCLayer(input_size, hidden_sizes[0], activation='relu')]
+        self.layers = [FCLayer(input_size, hidden_sizes[0]), ReLU()]
 
         for i in range(1, len(hidden_sizes)):
-            self.layers.append(FCLayer(hidden_sizes[i-1], hidden_sizes[i], activation='relu'))
+            self.layers.append(FCLayer(hidden_sizes[i-1], hidden_sizes[i]))
+            self.layers.append(ReLU())
 
         self.layers.append(FCLayer(hidden_sizes[-1], output_size))
         self.layers.append(Softmax())
@@ -129,7 +145,7 @@ class SimpleNeuralNet(object):
 
             loss = self.forward(X_batch, y_batch)
             losses.append(loss)
-            self.backwards(y_batch)
+            self.backward(y_batch)
             self.update(learning_rate, reg)
 
         return losses
@@ -147,19 +163,20 @@ class SimpleNeuralNet(object):
         losses = -np.log(losses)
         loss = np.mean(losses)
 
-        for layer in self.layers[:-1]:
-            loss += self.reg * 0.5 * np.sum(layer.W**2)
+        for layer in self.layers:
+            if "W" in layer.__dict__:
+                loss += self.reg * 0.5 * np.sum(layer.W**2)
         return loss
 
-    def backwards(self, y):
+    def backward(self, y):
         """
         compute gradients for all layers with respect to output y
         :param y: correct labels for current batch
         """
         sm = self.layers[-1]
-        dY = sm.backwards(y)
+        dY = sm.backward(y)
         for i in range(len(self.layers) - 2, -1, -1):
-            dY = self.layers[i].backwards(dY.copy())
+            dY = self.layers[i].backward(dY.copy())
 
     def update(self, learning_rate, reg):
         """
@@ -167,10 +184,10 @@ class SimpleNeuralNet(object):
         :param learning_rate: learning rate
         :param reg: regularization
         """
-        for i in range(len(self.layers) - 1):
-            layer = self.layers[i]
-            layer.W -= learning_rate * (layer.dW + reg * layer.W)
-            layer.b -= learning_rate * layer.db
+        for layer in self.layers:
+            if "W" in layer.__dict__:
+                layer.W -= learning_rate * (layer.dW + reg * layer.W)
+                layer.b -= learning_rate * layer.db
 
 
 if __name__ == "__main__":
