@@ -16,6 +16,6 @@ class TestNumericGradient(unittest.TestCase):
 
     def test_multiplication_gradients(self):
         grads = compute_numeric_gradient(np.prod, self.data)
-        for x in grads:
-            self.assertAlmostEqual(np.prod(self.data)/x, x)
+        for i in range(len(grads)):
+            self.assertAlmostEqual(np.prod(self.data)/self.data[i], grads[i])
 

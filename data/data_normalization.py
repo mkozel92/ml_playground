@@ -7,9 +7,9 @@ def feature_standardization(feature_matrix: np.array) -> np.array:
     :param feature_matrix: matrix of shape (num_data_points, dimension)
     :return: standardized matrix fo the same shape
     """
-    m = np.mean(feature_matrix, axis=0)
-    s = np.mean(feature_matrix, axis=0)
-    return(feature_matrix - m) / s
+    m = np.nanmean(feature_matrix, axis=0)
+    s = np.nanstd(feature_matrix, axis=0)
+    return (feature_matrix - m) / s
 
 
 def feature_rescaling(feature_matrix: np.array) -> np.array:
@@ -18,7 +18,7 @@ def feature_rescaling(feature_matrix: np.array) -> np.array:
     :param feature_matrix: matrix of shape (num_data_points, dimesion)
     :return: rescaled matrix of the same shape
     """
-    max_values = np.max(feature_matrix, axis=0)
-    min_values = np.min(feature_matrix, axis=0)
+    max_values = np.nanmax(feature_matrix, axis=0)
+    min_values = np.nanmin(feature_matrix, axis=0)
 
     return (feature_matrix - min_values) / (max_values - min_values)

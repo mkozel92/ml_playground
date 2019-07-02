@@ -153,7 +153,7 @@ class SimpleNeuralNet(object):
     def forward(self, X: np.array, y: np.array):
         """
         run forward pass with for a batch of data
-        :param X: inpud data of size (batch_size, dim)
+        :param X: input data of size (batch_size, dim)
         :param y: batch labels
         :return: mean loss of current batch
         """
